@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dino Koşusu</title>
+<style>
+:root{--bg:#120a14;--ink:#fff6d8;--gold:#ffd91a;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0;background:var(--bg);overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+body{display:flex;align-items:center;justify-content:center;font-family:"Courier New",ui-monospace,monospace}
+#wrap{position:relative;width:min(100vw,calc(100vh*16/9));width:min(100vw,calc(100dvh*16/9));aspect-ratio:16/9;container-type:inline-size;background:#000;overflow:hidden}
+canvas{width:100%;height:100%;image-rendering:pixelated;display:block}
+.ov{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.5cqw;background:rgba(30,12,36,.66);color:var(--ink);text-align:center}
+.ov.on{display:flex}
+h1{font-size:6.5cqw;margin:0;color:var(--gold);text-shadow:.5cqw .5cqw 0 #5a2a50;letter-spacing:.3cqw}
+h2{font-size:4.5cqw;margin:0;color:var(--gold);text-shadow:.4cqw .4cqw 0 #5a2a50}
+p{margin:0;font-size:2cqw;line-height:1.5}
+.b{font:inherit;font-size:2.5cqw;font-weight:bold;padding:.9cqw 4cqw;border:.4cqw solid var(--ink);background:#7a3f6e;color:var(--ink);cursor:pointer;box-shadow:0 .6cqw 0 #3b1a38;min-width:26cqw}
+.b:active{transform:translateY(.4cqw);box-shadow:0 .2cqw 0 #3b1a38}
+.pri{background:#e0a81a;color:#2a1228;border-color:#fff}
+.tb{position:absolute;bottom:4cqw;width:14cqw;height:14cqw;border-radius:50%;border:.5cqw solid var(--ink);background:rgba(122,63,110,.72);color:var(--ink);font:bold 2.4cqw "Courier New",monospace;display:none;padding:0;touch-action:none}
+#jl{left:3cqw;bottom:9.5cqw}#jr{right:3cqw;bottom:9.5cqw}
+#cr{position:absolute;left:1.5cqw;bottom:1.5cqw;display:flex;align-items:center;gap:1cqw;z-index:3;pointer-events:none;color:var(--ink);font-size:2cqw;font-weight:bold;text-shadow:.2cqw .2cqw 0 #3b1a38}
+#cr img{width:5.5cqw;height:5.5cqw;image-rendering:pixelated}
+@media (pointer:coarse){.playing .tb{display:block}}
+#pb{position:absolute;top:1.5cqw;right:20cqw;width:4.5cqw;height:4.5cqw;display:none;border:.3cqw solid var(--ink);background:rgba(122,63,110,.8);color:var(--ink);font-size:1.8cqw;padding:0;cursor:pointer}
+.playing #pb{display:block}
+#bun{position:absolute;right:1.5cqw;bottom:1.5cqw;width:5.5cqw;height:5.5cqw;padding:0;border:0;background:none;cursor:pointer;z-index:3}
+#bun img{width:100%;height:100%;image-rendering:pixelated}
+#toast{position:absolute;right:1.5cqw;bottom:8cqw;background:#ffb7d0;color:#5a1a3a;font-weight:bold;font-size:2.2cqw;padding:.8cqw 1.6cqw;border:.3cqw solid #fff;opacity:0;transition:opacity .25s;pointer-events:none;z-index:3}
+#toast.on{opacity:1}
+.ht{position:absolute;color:#ff6fa0;font-size:3cqw;pointer-events:none;animation:fl 1.4s ease-out forwards;z-index:3}
+@keyframes fl{from{transform:translateY(0);opacity:1}to{transform:translateY(-14cqw);opacity:0}}
+#rot{position:fixed;inset:0;background:var(--bg);color:var(--ink);display:none;align-items:center;justify-content:center;text-align:center;z-index:9;font-size:6vw;padding:8vw}
+@media (orientation:portrait) and (max-width:900px){#rot{display:flex}}
+</style></head><body>
+<div id="wrap">
+<canvas id="c" width="480" height="270"></canvas>
+<button id="pb" aria-label="Duraklat">❚❚</button>
+<div id="menu" class="ov on">
+<h1>DİNO KOŞUSU</h1>
+<p>Altınları topla, kütüklerden kaç!</p>
+<button class="b pri" data-a="start">Oyuna Başla</button>
+<button class="b" data-a="how">Nasıl Oynanır</button>
+<button class="b" id="snd" data-a="snd">Ses: Açık</button>
+<button class="b" data-a="fs">Tam Ekran</button>
+<p id="hi"></p>
+</div>
+<div id="how" class="ov">
+<h2>Nasıl Oynanır</h2>
+<p>Zıpla: Boşluk / ↑ / W veya ekrana dokun<br>Telefonda: ZIPLA butonları (yatay mod)<br>Altın toplayınca +50 puan<br>Kütüğe çarparsan oyun biter<br>Duraklat: P veya ❚❚ butonu</p>
+<button class="b" data-a="back">Geri</button>
+</div>
+<div id="pause" class="ov"><h2>Duraklatıldı</h2>
+<button class="b pri" data-a="resume">Devam Et</button>
+<button class="b" data-a="menu">Ana Menü</button></div>
+<div id="over" class="ov"><h2>OYUN BİTTİ</h2><p id="fin"></p>
+<button class="b pri" data-a="start">Tekrar Oyna</button>
+<button class="b" data-a="menu">Ana Menü</button></div>
+<button class="tb" id="jl">ZIPLA</button><button class="tb" id="jr">ZIPLA</button>
+<div id="toast">Hira’yı çok seviyorum ♥</div>
+<button id="bun" aria-label="Tavşan"><img id="bi" alt=""></button>
+<div id="cr"><img id="ci" alt=""><span>created by. ege</span></div>
+</div>
+<div id="rot">📱 Lütfen telefonunu yatay çevir</div>
+<script>
+(()=>{
+const W=480,H=270,GY=232,$=id=>document.getElementById(id);
+const cv=$("c"),x=cv.getContext("2d");x.imageSmoothingEnabled=false;
+function spr(g,rows,pal,px,py,s){for(let j=0;j<rows.length;j++)for(let i=0;i<rows[j].length;i++){const c=pal[rows[j][i]];if(c){g.fillStyle=c;g.fillRect(px+i*s,py+j*s,s,s)}}}
+const DP={G:"#7fb23a",D:"#4d7a2a",W:"#fff",K:"#111",P:"#f3c9a8"};
+const DI=["...GGGGGGG....","..GGGGGGGGG...","..GGWKGGGGG...","..GGWWGGGGG...","..GGGGGGGGGG..","..GGGGGDDDDD..","D.GGGGGGG.....","DGGGGGGGGG....","GGGGPPGGGG....",".GGGPPPGGG....",".GGGPPPGGG....","..GGGGGGGG....","..GGGGGGG....."];
+const LA=["..GG..GGG.....","..GG..GG......"],LB=["..GGG..GG.....","...GG..GG....."];
+const SP={B:"#5a2e22",D:"#3a1d17",L:"#7a4030"};
+const ST=["...B....","...BB...","..BBB...","..BLBB..",".BBBBB..",".BBBDBB.","BBLBBBB.",".BBBBB..","..BBDB..","..BBBB..","..BDBB..",".BBBBBB."];
+// bunny
+const BR=["..WW....WW..","..WP....PW..","..WP....PW..","..WP....PW..","..WWWWWWWW..",".WWWWWWWWWW.",".WWKWWWWKWW.",".WWWWPPWWWW.",".WWWWWWWWWW.","..WWWWWWWW..","...WWWWWW..."];
+{const o=document.createElement("canvas");o.width=12;o.height=11;spr(o.getContext("2d"),BR,{W:"#fff",P:"#ffb0c8",K:"#222"},0,0,1);$("bi").src=o.toDataURL()}
+const CR=[".O........O.",".OO......OO.",".OOOOOOOOOO.",".OOOOOOOOOO.",".OOKOOOOKOO.",".OOOOPPOOOO.","..OOOOOOOO..","...OOOOOO..."];
+{const o=document.createElement("canvas");o.width=12;o.height=11;spr(o.getContext("2d"),CR,{O:"#f0a050",P:"#ffb0c8",K:"#222"},0,1,1);$("ci").src=o.toDataURL()}
+// background caches
+let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+function mk(w,h){const c=document.createElement("canvas");c.width=w;c.height=h;const g=c.getContext("2d");g.imageSmoothingEnabled=false;return[c,g]}
+const[SKY,sg]=mk(W,H);
+for(let y=0;y<GY;y+=6){const k=y/GY;sg.fillStyle=`rgb(${156+48*k|0},${95+43*k|0},${136+20*k|0})`;sg.fillRect(0,y,W,6)}
+sg.fillStyle="#fff";let gr=sg.createRadialGradient(340,66,30,340,66,90);gr.addColorStop(0,"rgba(255,240,230,.45)");gr.addColorStop(1,"rgba(255,240,230,0)");sg.fillStyle=gr;sg.fillRect(240,0,200,170);
+sg.fillStyle="#fff8e6";sg.beginPath();sg.arc(340,66,40,0,7);sg.fill();
+const[MT,mg]=mk(W,H);
+function poly(g,c,p){g.fillStyle=c;g.beginPath();p.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.fill()}
+poly(mg,"#74406a",[[0,GY],[0,170],[50,135],[110,150],[190,185],[260,GY]]);
+poly(mg,"#e0808f",[[0,GY],[0,160],[40,138],[100,122],[112,150],[80,185],[40,GY]]);
+poly(mg,"#4a2748",[[110,GY],[200,170],[262,112],[310,130],[345,165],[400,150],[480,160],[480,GY]]);
+poly(mg,"#33193a",[[240,GY],[300,160],[335,125],[360,140],[400,178],[440,140],[480,118],[480,GY]]);
+const[FO,fg]=mk(W,H);
+fg.fillStyle="#1a0a12";fg.fillRect(0,GY-14,W,14);
+for(let tx=0;tx<W;tx+=7+rnd()*7|0){const h=18+rnd()*34|0;for(const o of[0,-W]){for(let yy=0;yy<h;yy+=3){const w=2+Math.round(yy/h*5)*2+(rnd()<.2?2:0);fg.fillRect(tx+o-w/2|0,GY-14-h+yy,w,3)}}}
+const[GR,gg]=mk(W,H-GY);
+gg.fillStyle="#3a2030";gg.fillRect(0,5,W,H);gg.fillStyle="#3fc23a";gg.fillRect(0,0,W,5);
+for(let i=0;i<260;i++){gg.fillStyle=rnd()<.5?"#7be04a":"#2e8f2c";gg.fillRect(rnd()*W|0,rnd()*4|0,2,2)}
+for(let i=0;i<90;i++){gg.fillStyle="#5a3040";gg.fillRect(rnd()*W|0,8+rnd()*(H-GY-10)|0,3,2)}
+const CL=[{x:10,y:22,w:100},{x:190,y:48,w:130},{x:380,y:16,w:80},{x:290,y:96,w:60}];
+// audio
+let ac=null,mute=false;
+function au(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(ac&&ac.state=="suspended")ac.resume()}
+function tone(f,d,ty,v,f2,del){if(!ac||mute)return;f2=f2||f;del=del||0;const o=ac.createOscillator(),g=ac.createGain(),t0=ac.currentTime+del;o.type=ty||"square";o.frequency.setValueAtTime(f,t0);o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t0+d);g.gain.setValueAtTime(v||.07,t0);g.gain.exponentialRampToValueAtTime(.001,t0+d);o.connect(g);g.connect(ac.destination);o.start(t0);o.stop(t0+d+.02)}
+const sfx={jump:()=>tone(280,.16,"square",.06,640),coin:()=>{tone(988,.08,"square",.05);tone(1319,.18,"square",.05,1319,.07)},hit:()=>tone(220,.45,"sawtooth",.1,40),click:()=>tone(520,.06,"square",.05,700),mile:()=>{tone(660,.08,"square",.04);tone(880,.12,"square",.04,880,.09)},love:()=>{tone(660,.1,"triangle",.1);tone(880,.1,"triangle",.1,880,.1);tone(1100,.25,"triangle",.1,1100,.2)}};
+// state
+let st="menu",speed=3.4,sc=0,coins=0,hi=0,obs=[],items=[],fl=[],D={y:GY-28,vy:0,on:true},gap=200,mile=0,shake=0,t=0,gx=0,fo=0,an=0;
+try{hi=+localStorage.getItem("dinoHi")||0}catch(e){}
+const wrap=$("wrap");
+function show(id){document.querySelectorAll(".ov").forEach(e=>e.classList.toggle("on",e.id==id));if(id=="menu")$("hi").textContent="Rekor: "+String(hi).padStart(5,"0")}
+function reset(){speed=3.4;sc=0;coins=0;obs=[];items=[];fl=[];D={y:GY-28,vy:0,on:true};gap=200;mile=0;shake=0}
+function start(){reset();st="play";show("");wrap.classList.add("playing")}
+function pause(){if(st=="play"){st="pause";show("pause");wrap.classList.remove("playing")}}
+function resume(){if(st=="pause"){st="play";show("");wrap.classList.add("playing")}}
+function die(){st="over";sfx.hit();shake=10;wrap.classList.remove("playing");if(Math.floor(sc)>hi){hi=Math.floor(sc);try{localStorage.setItem("dinoHi",hi)}catch(e){}}$("fin").textContent="Puan: "+Math.floor(sc)+"  •  Altın: "+coins;setTimeout(()=>{if(st=="over")show("over")},500)}
+function jump(){if(st=="play"&&D.on){D.vy=-9.4;D.on=false;sfx.jump()}}
+function act(a){({start,how:()=>show("how"),back:()=>show("menu"),menu:()=>{st="menu";reset();show("menu")},resume,snd:()=>{mute=!mute;$("snd").textContent="Ses: "+(mute?"Kapalı":"Açık")},fs:()=>{try{(wrap.requestFullscreen||wrap.webkitRequestFullscreen).call(wrap)}catch(e){}}})[a]()}
+document.querySelectorAll(".b").forEach(b=>b.addEventListener("click",()=>{au();sfx.click();act(b.dataset.a);b.blur()}));
+$("pb").addEventListener("click",()=>{au();pause()});
+addEventListener("keydown",e=>{au();if(["Space","ArrowUp","KeyW"].includes(e.code)){e.preventDefault();if(st=="play")jump();else if(st=="menu"||st=="over")start()}else if(e.code=="KeyP"||e.code=="Escape"){st=="play"?pause():resume()}});
+cv.addEventListener("pointerdown",e=>{au();e.preventDefault();jump()});
+["jl","jr"].forEach(i=>$(i).addEventListener("pointerdown",e=>{au();e.preventDefault();jump()}));
+document.addEventListener("visibilitychange",()=>{if(document.hidden)pause()});
+let tt=0;$("bun").addEventListener("click",()=>{au();sfx.love();const T=$("toast");T.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>T.classList.remove("on"),2200);for(let i=0;i<5;i++){const h=document.createElement("span");h.className="ht";h.textContent="♥";h.style.right=(1.5+Math.random()*5)+"cqw";h.style.bottom="7cqw";h.style.animationDelay=(i*.12)+"s";wrap.appendChild(h);setTimeout(()=>h.remove(),1800)}});
+// world
+function spawn(){const r=rnd(),n=r<.7?1:2,rows=r<.4?ST:ST.slice(4),h=rows.length*2,w=16+(n-1)*15;obs.push({x:W+20,w,h,rows,n});gap=140+rnd()*110+speed*16;const q=rnd();if(q<.55)items.push({x:W+20+w/2,y:GY-h-34,p:rnd()*6});else if(q<.85)for(let i=-1;i<=1;i++)items.push({x:W+20+gap/2+i*22,y:GY-18,p:rnd()*6})}
+function update(dt){speed=Math.min(8.2,speed+.0009*dt);sc+=speed*dt*.06;D.vy+=.55*dt;D.y+=D.vy*dt;if(D.y>=GY-28){D.y=GY-28;D.vy=0;D.on=true}
+obs.forEach(o=>o.x-=speed*dt);items.forEach(c=>c.x-=speed*dt);obs=obs.filter(o=>o.x>-40);items=items.filter(c=>c.x>-20);
+const l=obs[obs.length-1];if(!l||l.x<W-gap)spawn();
+const dx=49,dy=D.y+4,dw=18,dh=24;
+for(const o of obs){if(dx<o.x+o.w-3&&dx+dw>o.x+3&&dy+dh>GY+2-o.h+2){die();return}}
+items=items.filter(c=>{if(Math.abs(c.x-(dx+dw/2))<14&&Math.abs(c.y-(dy+dh/2))<20){coins++;sc+=50;sfx.coin();fl.push({x:c.x,y:c.y,l:40});return false}return true});
+fl.forEach(f=>{f.y-=.8*dt;f.l-=dt});fl=fl.filter(f=>f.l>0);
+const m=Math.floor(sc/500);if(m>mile){mile=m;sfx.mile()}an+=speed*dt*.06}
+// draw
+const SG=[[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]];
+function dig(n,px,py,w,h,th){const s=SG[n],R=[[px+th,py,w-2*th,th],[px+w-th,py+th,th,h/2-th],[px+w-th,py+h/2,th,h/2-th],[px+th,py+h-th,w-2*th,th],[px,py+h/2,th,h/2-th],[px,py+th,th,h/2-th],[px+th,py+h/2-th/2,w-2*th,th]];R.forEach((r,i)=>{x.fillStyle=s[i]?"#ffe21f":"rgba(255,226,31,.13)";x.fillRect(r[0],r[1],r[2],r[3])})}
+function coin(cx,cy,p){const w=Math.max(2,Math.round(Math.abs(Math.cos(t*.1+p))*9)),h=18;cx=Math.round(cx);cy=Math.round(cy);x.fillStyle="#000";x.fillRect(cx-(w>>1)-1,cy-h/2-1,w+2,h+2);x.fillStyle="#ffd400";x.fillRect(cx-(w>>1),cy-h/2,w,h);if(w>4){x.fillStyle="#f0a000";x.fillRect(cx-1,cy-h/2+2,2,h-4)}}
+function draw(dt){const bs=st=="play"?speed:st=="menu"?1.6:0;gx=(gx+bs*dt)%W;fo=(fo+bs*.2*dt)%W;
+x.save();if(shake>0){x.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake=Math.max(0,shake-.6*dt)}
+x.drawImage(SKY,0,0);x.fillStyle="#8a5a80";
+CL.forEach(c=>{c.x-=.1*dt;if(c.x<-c.w)c.x=W;const a=c.x|0,b=c.y;x.fillRect(a,b,c.w,6);x.fillRect(a+8,b-5,c.w-20,5);x.fillRect(a+4,b+6,c.w-12,4)});
+x.drawImage(MT,0,0);x.drawImage(FO,-(fo|0),0);x.drawImage(FO,W-(fo|0),0);
+x.drawImage(GR,-(gx|0),GY);x.drawImage(GR,W-(gx|0),GY);
+for(const o of obs)for(let i=0;i<o.n;i++)spr(x,o.rows,SP,Math.round(o.x+i*15),GY+2-o.h,2);
+items.forEach(c=>coin(c.x,c.y+Math.sin(t*.08+c.p)*2,c.p));
+const run=st=="play"||st=="menu";const lg=(!D.on)||(((an*1.4)|0)%2)?LA:LB;
+spr(x,DI.concat(lg),DP,44,Math.round(D.y),2);
+x.font="bold 10px 'Courier New',monospace";x.fillStyle="#ffe21f";x.textAlign="center";fl.forEach(f=>x.fillText("+50",f.x,f.y));
+x.textAlign="left";coin(16,16,0);x.fillStyle="#ffe21f";x.font="bold 14px 'Courier New',monospace";x.fillText("x"+coins,30,21);
+const s=String(Math.min(99999,Math.floor(sc))).padStart(5,"0");for(let i=0;i<5;i++)dig(+s[i],W-80+i*14,8,11,18,2);
+const h=String(Math.min(99999,hi)).padStart(5,"0");x.font="bold 10px 'Courier New',monospace";x.fillText("HI",W-80,43);for(let i=0;i<5;i++)dig(+h[i],W-62+i*11,34,8,12,2);
+x.restore()}
+show("menu");let last=performance.now();
+function loop(n){const dt=Math.min(2.5,(n-last)/16.667);last=n;t+=dt;if(st=="play")update(dt);draw(dt);requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+})();
+</script></body></html>
